@@ -6,9 +6,8 @@
 #include <QTextStream>
 #include <QThread>
 
-class QConsoleInOut : public QThread
+class QConsoleInOut : public QObject
 {
-private:
 	Q_OBJECT
 
 public:
@@ -21,33 +20,38 @@ protected:
 	Q_INVOKABLE void writeLine(const QString &text);
 	Q_INVOKABLE void write(const QString &text);
 
-	void run();
+public slots:
+	Q_INVOKABLE void readNotify();
+
+private:
+	QSocketNotifier notifier;
+	QTextStream in;
+	QTextStream out;
 };
 
-QConsoleInOut::QConsoleInOut() : QThread()
+QConsoleInOut::QConsoleInOut() : notifier(fileno(stdin), QSocketNotifier::Read), in(stdin), out(stdout)
 {
-	QThread::start();
+	connect(&notifier, SIGNAL(activated(int)), this, SLOT(readNotify()));
 }
 
-void QConsoleInOut::run()
+void QConsoleInOut::readNotify()
 {
-	QTextStream in(stdin);
 	QString line;
-	while (in.readLineInto(&line)) {
+	if (in.readLineInto(&line)) {
 		readLine(line);
 	}
 }
 
 void QConsoleInOut::writeLine(const QString &text)
 {
-	QTextStream out(stdout);
 	out << text << "\n";
+	out.flush();
 }
 
 void QConsoleInOut::write(const QString &text)
 {
-	QTextStream out(stdout);
 	out << text;
+	out.flush();
 }
 
 class QConsoleInOutQmlPlugin : public QQmlExtensionPlugin
