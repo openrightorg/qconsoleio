@@ -39,6 +39,8 @@ void QConsoleInOut::readNotify()
 	QString line;
 	if (in.readLineInto(&line)) {
 		readLine(line);
+	} else {
+		notifier.setEnabled(false);
 	}
 }
 
